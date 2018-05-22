@@ -142,6 +142,7 @@ function populateTokenData() {
 
 $( document ).ready(function() {
   if (typeof web3 !== 'undefined') {
+    //如果安装了浏览器插件metamask 会进入该流程
     console.warn("Using web3 detected from external source like Metamask")
     // Use Mist/MetaMask's provider
     window.web3 = new Web3(web3.currentProvider);
