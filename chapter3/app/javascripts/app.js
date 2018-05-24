@@ -52,7 +52,9 @@ window.voteForCandidate = function(candidate) {
 
 window.buyTokens = function() {
   let tokensToBuy = $("#buy").val();
-  let price = tokensToBuy * tokenPrice;
+  //let price 是转化为以太币的金额，单位为eth; 直接tokensToBuy * tokenPrice 会有误差，tokenPrice：0.1 ,12*0.1= 1.2000...002!
+  let priceWei = tokensToBuy * web3.toWei(tokenPrice,'ether');
+  let price = web3.fromWei(priceWei);
   $("#buy-msg").html("Purchase order has been submitted. Please wait.");
   Voting.deployed().then(function(contractInstance) {
     contractInstance.buy({value: web3.toWei(price, 'ether'), from: web3.eth.accounts[0]}).then(function(v) {
@@ -63,7 +65,7 @@ window.buyTokens = function() {
     })
   });
   populateTokenData();
-}
+};
 
 window.lookupVoterInfo = function() {
   let address = $("#voter-info").val();
@@ -79,7 +81,7 @@ window.lookupVoterInfo = function() {
       }
     });
   });
-}
+};
 
 /* Instead of hardcoding the candidates hash, we now fetch the candidate list from
  * the blockchain and populate the array. Once we fetch the candidates, we setup the
@@ -94,8 +96,20 @@ function populateCandidates() {
          */
         candidates[web3.toUtf8(candidateArray[i])] = "candidate-" + i;
       }
+      /*
+         <td id="candidate-0"></td>
+         <td id="candidate-1"></td>
+         <td id="candidate-2"></td>
+      */
       setupCandidateRows();
+      //以下函数执行完就把数字填上了，
+      /*
+         <td id="candidate-0">***</td>
+         <td id="candidate-1">***</td>
+         <td id="candidate-2">***</td>
+      */
       populateCandidateVotes();
+
       populateTokenData();
     });
   });
@@ -107,6 +121,7 @@ function populateCandidateVotes() {
     let name = candidateNames[i];
     Voting.deployed().then(function(contractInstance) {
       contractInstance.totalVotesFor.call(name).then(function(v) {
+        //<td id="candidate-0">0</td>  ，contractInstance.totalVotesFor.call(name)默认会返回0（如果name未匹配上）
         $("#" + candidates[name]).html(v.toString());
       });
     });
@@ -152,6 +167,10 @@ $( document ).ready(function() {
     window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
   }
 
+  //该处 Voting 是truffle-contract 的对象，该对象有setProvider方法；合约'Voting'本身没有setProvider方法的
+    //import { default as contract } from 'truffle-contract'
+    //import voting_artifacts from '../../build/contracts/Voting.json'
+    //var Voting = contract(voting_artifacts);
   Voting.setProvider(web3.currentProvider);
   populateCandidates();
 
